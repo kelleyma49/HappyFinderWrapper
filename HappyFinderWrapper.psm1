@@ -23,10 +23,18 @@ function Invoke-HappyFinder {
 
 	$batScriptPath = Join-Path $PSScriptRoot 'setenvvar.bat'
 	$tmpFilePath = [System.IO.Path]::GetTempFileName()
-	$batShort = Get-ShortName (Get-ChildItem $batScriptPath)
-	$tmpShort = Get-ShortName (Get-ChildItem $tmpFilePath)
-	& $HfPath $BasePath "$batShort $tmpShort" 
+	& $HfPath $BasePath "$batScriptPath $tmpFilePath"
+	$results = @()
+	Get-Content $tmpFilePath | ForEach-Object {
+		$results += $_
+	}	
 	Remove-Item $tmpFilePath
+
+	if ($results.Length -eq 2) {
+		return $results[1]	
+	} elseif ($results.Length -gt 2) {
+		return $results[1..($results.Length-1)]
+	}
 }
 
 Export-ModuleMember -Function 'Invoke-HappyFinder'
