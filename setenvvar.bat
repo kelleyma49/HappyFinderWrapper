@@ -1,3 +1,6 @@
-echo off
-echo %1
-echo %*
+@echo OFF
+setlocal enabledelayedexpansion
+
+for %%i in (%*) do (
+	echo %%i >> %1 
+)
