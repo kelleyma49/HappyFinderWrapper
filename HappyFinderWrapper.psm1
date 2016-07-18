@@ -31,10 +31,11 @@ function Invoke-HappyFinder {
 
 	$batScriptPath = Join-Path $PSScriptRoot 'setenvvar.bat'
 	$tmpFilePath = [System.IO.Path]::GetTempFileName()
+	"& $HfPath $BasePath '$batScriptPath $tmpFilePath'" | out-file C:\tools\shit.txt -Append -Encoding ascii
 	& $HfPath $BasePath "$batScriptPath $tmpFilePath"
 	$results = @()
 	Get-Content $tmpFilePath | ForEach-Object {
-		$results += $_
+		$results += Join-Path $BasePath $_.Trim()
 	}	
 	Remove-Item $tmpFilePath
 
@@ -44,55 +45,79 @@ function Invoke-HappyFinder {
 	}
 }
 
-function Get-BufferState {
-	param([ref]$line,[ref]$cursor)
-	$lineTmp = $null
-	$cursorTmp = $null
-	[Microsoft.PowerShell.PSConsoleReadline]::GetBufferState([ref]$lineTmp, [ref]$cursorTmp)
-	$line.Value = $lineTmp
-	$cursor.Value = $cursorTmp
-}
-
 function Find-CurrentPath {
-	param([ref]$leftCursor,[ref]$rightCursor)
-	$line = $null
-	$cursor = $null
-	Get-BufferState ([ref]$line) ([ref]$cursor)
-	for ($leftCursor = $cursor;$leftCursor -ge 0;$leftCursor--) {
-		if ($line[$leftCursor] -eq " ") {
-			for ($leftCursorQuote = $leftCursor;$leftCursorQuote -ge 0;$leftCursorQuote--) {
-				if (($line[$leftCursorQuote] -eq '"') -and (($leftCursorQuote -le 0) -or ($line[$leftCursorQuote-1] -ne '"'))) {
-					$leftCursor = $leftCursorQuote + 1
+	param([string]$line,[int]$cursor,[ref]$leftCursor,[ref]$rightCursor)
+	
+	if ($line.Length -eq 0) {
+		$leftCursor.Value = $rightCursor.Value = 0
+		return $null
+	}
+
+	if ($cursor -ge $line.Length) {
+		$leftCursorTmp = $cursor - 1
+	} else {
+		$leftCursorTmp = $cursor
+	}
+	for (;$leftCursorTmp -ge 0;$leftCursorTmp--) {
+		if ([string]::IsNullOrWhiteSpace($line[$leftCursorTmp])) {
+			if (($leftCursorTmp -lt $cursor) -and ($leftCursorTmp -lt $line.Length-1)) {
+				$leftCursorTmpQuote = $leftCursorTmp - 1
+				$leftCursorTmp = $leftCursorTmp + 1
+			} else {
+				$leftCursorTmpQuote = $leftCursorTmp
+			}
+			for (;$leftCursorTmpQuote -ge 0;$leftCursorTmpQuote--) {
+				if (($line[$leftCursorTmpQuote] -eq '"') -and (($leftCursorTmpQuote -le 0) -or ($line[$leftCursorTmpQuote-1] -ne '"'))) {
+					$leftCursorTmp = $leftCursorTmpQuote
+					break
 				}
-				elseif (($line[$leftCursorQuote] -eq "'") -and (($leftCursorQuote -le 0) -or ($line[$leftCursorQuote-1] -ne "'"))) {
-					$leftCursor = $leftCursorQuote + 1
+				elseif (($line[$leftCursorTmpQuote] -eq "'") -and (($leftCursorTmpQuote -le 0) -or ($line[$leftCursorTmpQuote-1] -ne "'"))) {
+					$leftCursorTmp = $leftCursorTmpQuote
+					break
 				}
 			}
 			break
 		}
 	}
-	for ($rightCursor = $cursor;$rightCursor -lt $line.Length;$rightCursor++) {
-		if ($line[$rightCuror] -eq " ") {
-			for ($rightCursorQuote = $rightCursor;$rightCursorQuote -lt $line.Length;$rightCursorQuote++) {
-				if (($line[$rightCursorQuote] -eq '"') -and (($rightCursorQuote -gt $line.Length) -or ($line[$rightCursorQuote+1] -ne '"'))) {
-					$rightCursor = $rightCursorQuote - 1
+	for ($rightCursorTmp = $cursor;$rightCursorTmp -lt $line.Length;$rightCursorTmp++) {
+		if ([string]::IsNullOrWhiteSpace($line[$rightCursorTmp])) {
+			if ($rightCursorTmp -gt $cursor) {
+				$rightCursorTmp = $rightCursorTmp - 1
+			}
+			for ($rightCursorTmpQuote = $rightCursorTmp+1;$rightCursorTmpQuote -lt $line.Length;$rightCursorTmpQuote++) {
+				if (($line[$rightCursorTmpQuote] -eq '"') -and (($rightCursorTmpQuote -gt $line.Length) -or ($line[$rightCursorTmpQuote+1] -ne '"'))) {
+					$rightCursorTmp = $rightCursorTmpQuote 
+					break
 				}
-				elseif (($line[$rightCursorQuote] -eq "'") -and (($rightCursorQuote -gt $line.Length) -or ($line[$rightCursorQuote+1] -ne "'"))) {
-					$rightCursor = $rightCursorQuote - 1
+				elseif (($line[$rightCursorTmpQuote] -eq "'") -and (($rightCursorTmpQuote -gt $line.Length) -or ($line[$rightCursorTmpQuote+1] -ne "'"))) {
+					$rightCursorTmp = $rightCursorTmpQuote
+					break
 				}
 			}
 			break
 		}
 	}
-	return $line[$leftCursor..$rightCursor]
+	if ($leftCursorTmp -lt 0 -or $leftCursorTmp -gt $line.Length-1) { $leftCursorTmp = 0}
+	if ($rightCursorTmp -ge $line.Length) { $rightCursorTmp = $line.Length-1 }
+	$leftCursor.Value = $leftCursorTmp
+	$rightCursor.Value = $rightCursorTmp
+	$str = -join ($line[$leftCursorTmp..$rightCursorTmp])
+	return $str
 }
 
 function Invoke-HappyFinderPsReadlineHandler {
 	$leftCursor = $null
 	$rightCursor = $null
-	$currentPath = Find-CurrentPath ([ref]$leftCursor) ([ref]$rightCursor)
-	#$result = Invoke-HappyFinder $currentPath
-	$result = 'c:\tree'
+	$line = $null
+	$cursor = $null
+	[Microsoft.PowerShell.PSConsoleReadline]::GetBufferState([ref]$line, [ref]$cursor)
+	$currentPath = Find-CurrentPath $line $cursor ([ref]$leftCursor) ([ref]$rightCursor)
+	if (!(Test-Path $currentPath)) {
+		$currentPath = $null
+	}
+	$currentPath | Out-File c:\tools\shit.txt -Encoding ascii
+	"left: $leftCursor ; right: $rightCursor" | Out-File c:\tools\shit.txt -Append -Encoding ascii
+	$result = Invoke-HappyFinder $currentPath
 	if ($result -ne $null) {
 		$str = $result -join ','
 		[Microsoft.PowerShell.PSConsoleReadLine]::Replace($leftCursor,$rightCursor-$leftCursor,$str)
