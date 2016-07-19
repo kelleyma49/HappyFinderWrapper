@@ -78,7 +78,7 @@ Describe "Find-CurrentPath" {
 					$quote  = $_
 					$line = $quote + 'C:\Program Files\' + $quote ; $cursor = 0
 					$leftCursor = $rightCursor = $null
-					Find-CurrentPath $line $cursor ([ref]$leftCursor) ([ref]$rightCursor) | Should Be ($quote + 'C:\Program Files\' + $quote)
+					Find-CurrentPath $line $cursor ([ref]$leftCursor) ([ref]$rightCursor) | Should Be 'C:\Program Files\'
 					$leftCursor | Should Be 0
 					$rightCursor | Should Be ($line.Length-1)
 				}
@@ -89,7 +89,7 @@ Describe "Find-CurrentPath" {
 					$quote  = $_
 					$line = $quote + 'C:\Program Files\' + $quote ; $cursor = 0
 					$leftCursor = $rightCursor = $null
-					Find-CurrentPath $line $cursor ([ref]$leftCursor) ([ref]$rightCursor) | Should Be ($quote + 'C:\Program Files\' + $quote)
+					Find-CurrentPath $line $cursor ([ref]$leftCursor) ([ref]$rightCursor) | Should Be 'C:\Program Files\'
 					$leftCursor | Should Be 0
 					$rightCursor | Should Be ($line.Length-1)
 				}

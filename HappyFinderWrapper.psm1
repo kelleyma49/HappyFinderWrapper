@@ -1,11 +1,11 @@
-Function Get-ShortName
+Function Get-ShortPath
 {
 	param($path)
 	$fso = New-Object -ComObject Scripting.FileSystemObject
-	 if ($path.psiscontainer)
-		{$fso.getfolder($path.fullname).ShortName
+	if (Test-Path $path -PathType Container) {
+		return $fso.getfolder($path).ShortPath
 	} else {
-	  $fso.getfile($path.fullname).ShortName
+		return $fso.getfile($path).ShortPath
 	} 
 }
 
@@ -25,17 +25,19 @@ function Invoke-HappyFinder {
 
 	$HfPath = Join-Path $env:GOPATH 'bin\hf.exe' 
 
-	if ($BasePath -eq $null) {
+	if ($BasePath -eq $null -or !(Test-Path $BasePath -PathType Container)) {
 		$BasePath = $PWD.Path
 	}
 
 	$batScriptPath = Join-Path $PSScriptRoot 'setenvvar.bat'
 	$tmpFilePath = [System.IO.Path]::GetTempFileName()
-	"& $HfPath $BasePath '$batScriptPath $tmpFilePath'" | out-file C:\tools\shit.txt -Append -Encoding ascii
-	& $HfPath $BasePath "$batScriptPath $tmpFilePath"
+	$basePathShort = Get-ShortPath $BasePath
+	$batScriptShort = Get-ShortPath $batScriptPath
+	$tmpFilePathShort = Get-ShortPath $tmpFilePath 
+	& $HfPath $basePathShort "$batScriptShort $tmpFilePathShort"
 	$results = @()
 	Get-Content $tmpFilePath | ForEach-Object {
-		$results += Join-Path $BasePath $_.Trim()
+		$results += Join-Path $BasePath $_.Trim().Trim("'").Trim('"')
 	}	
 	Remove-Item $tmpFilePath
 
@@ -58,7 +60,7 @@ function Find-CurrentPath {
 	} else {
 		$leftCursorTmp = $cursor
 	}
-	for (;$leftCursorTmp -ge 0;$leftCursorTmp--) {
+	:leftSearch for (;$leftCursorTmp -ge 0;$leftCursorTmp--) {
 		if ([string]::IsNullOrWhiteSpace($line[$leftCursorTmp])) {
 			if (($leftCursorTmp -lt $cursor) -and ($leftCursorTmp -lt $line.Length-1)) {
 				$leftCursorTmpQuote = $leftCursorTmp - 1
@@ -69,32 +71,32 @@ function Find-CurrentPath {
 			for (;$leftCursorTmpQuote -ge 0;$leftCursorTmpQuote--) {
 				if (($line[$leftCursorTmpQuote] -eq '"') -and (($leftCursorTmpQuote -le 0) -or ($line[$leftCursorTmpQuote-1] -ne '"'))) {
 					$leftCursorTmp = $leftCursorTmpQuote
-					break
+					break leftSearch
 				}
 				elseif (($line[$leftCursorTmpQuote] -eq "'") -and (($leftCursorTmpQuote -le 0) -or ($line[$leftCursorTmpQuote-1] -ne "'"))) {
 					$leftCursorTmp = $leftCursorTmpQuote
-					break
+					break leftSearch
 				}
 			}
-			break
+			break leftSearch
 		}
 	}
-	for ($rightCursorTmp = $cursor;$rightCursorTmp -lt $line.Length;$rightCursorTmp++) {
+	:rightSearch for ($rightCursorTmp = $cursor;$rightCursorTmp -lt $line.Length;$rightCursorTmp++) {
 		if ([string]::IsNullOrWhiteSpace($line[$rightCursorTmp])) {
 			if ($rightCursorTmp -gt $cursor) {
 				$rightCursorTmp = $rightCursorTmp - 1
 			}
 			for ($rightCursorTmpQuote = $rightCursorTmp+1;$rightCursorTmpQuote -lt $line.Length;$rightCursorTmpQuote++) {
 				if (($line[$rightCursorTmpQuote] -eq '"') -and (($rightCursorTmpQuote -gt $line.Length) -or ($line[$rightCursorTmpQuote+1] -ne '"'))) {
-					$rightCursorTmp = $rightCursorTmpQuote 
-					break
+					$rightCursorTmp = $rightCursorTmpQuote
+					break rightSearch
 				}
 				elseif (($line[$rightCursorTmpQuote] -eq "'") -and (($rightCursorTmpQuote -gt $line.Length) -or ($line[$rightCursorTmpQuote+1] -ne "'"))) {
 					$rightCursorTmp = $rightCursorTmpQuote
-					break
+					break rightSearch
 				}
 			}
-			break
+			break rightSearch
 		}
 	}
 	if ($leftCursorTmp -lt 0 -or $leftCursorTmp -gt $line.Length-1) { $leftCursorTmp = 0}
@@ -102,7 +104,7 @@ function Find-CurrentPath {
 	$leftCursor.Value = $leftCursorTmp
 	$rightCursor.Value = $rightCursorTmp
 	$str = -join ($line[$leftCursorTmp..$rightCursorTmp])
-	return $str
+	return $str.Trim("'").Trim('"')
 }
 
 function Invoke-HappyFinderPsReadlineHandler {
@@ -112,15 +114,32 @@ function Invoke-HappyFinderPsReadlineHandler {
 	$cursor = $null
 	[Microsoft.PowerShell.PSConsoleReadline]::GetBufferState([ref]$line, [ref]$cursor)
 	$currentPath = Find-CurrentPath $line $cursor ([ref]$leftCursor) ([ref]$rightCursor)
-	if (!(Test-Path $currentPath)) {
+	$addSpace = $currentPath -ne $null -and $currentPath.StartsWith(" ")
+	if ([String]::IsNullOrWhitespace($currentPath) -or !(Test-Path $currentPath)) {
 		$currentPath = $null
 	}
-	$currentPath | Out-File c:\tools\shit.txt -Encoding ascii
-	"left: $leftCursor ; right: $rightCursor" | Out-File c:\tools\shit.txt -Append -Encoding ascii
 	$result = Invoke-HappyFinder $currentPath
 	if ($result -ne $null) {
+
+		# quote strings if we need to:
+		if ($result -is [system.array]) {
+			for ($i = 0;$i -lt $result.Length;$i++) {
+				if ($result[$i].Contains(" ") -or $result[$i].Contains("`t")) {
+					$result[$i] = "'{0}'" -f $result[$i]
+				}
+			}
+		} else {
+			if ($result.Contains(" ") -or $result.Contains("`t")) {
+					$result = "'{0}'" -f $result
+			}
+		}
+		
 		$str = $result -join ','
-		[Microsoft.PowerShell.PSConsoleReadLine]::Replace($leftCursor,$rightCursor-$leftCursor,$str)
+		if ($addSpace) {
+			[Microsoft.PowerShell.PSConsoleReadLine]::Replace($leftCursor,$rightCursor-$leftCursor+1," " + $str)
+		} else {
+			[Microsoft.PowerShell.PSConsoleReadLine]::Replace($leftCursor,$rightCursor-$leftCursor+1,$str)
+		}		
 	}
 }
 
