@@ -164,5 +164,3 @@ if (Get-Module -ListAvailable -Name PSReadline) {
 if ([string]::IsNullOrWhiteSpace($env:GOPATH)) {
 	throw 'environment variable GOPATH not set'
 }	
-
-Export-ModuleMember -Function 'Invoke-HappyFinder','Invoke-HappyFinderPsReadlineHandler'
