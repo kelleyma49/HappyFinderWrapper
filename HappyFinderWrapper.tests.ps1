@@ -4,6 +4,11 @@
 # You can download Pester from http://go.microsoft.com/fwlink/?LinkID=534084
 #
 Get-Module HappyFinderWrapper | Remove-Module
+
+# set env variable so Import-Module doesn't fail:
+if ([string]::IsNullOrEmpty($env:GOPATH)) {
+	$env:GOPATH = "c:\ADirectoryThatShouldNotExist\"
+}
 Import-Module $PSScriptRoot\HappyFinderWrapper.psm1 -ErrorAction Stop
 
 Describe "Find-CurrentPath" {

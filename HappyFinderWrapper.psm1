@@ -161,4 +161,8 @@ if (Get-Module -ListAvailable -Name PSReadline) {
 	Write-Warning "PSReadline module not found - keyboard handler not installed" 
 }
 
+if ([string]::IsNullOrWhiteSpace($env:GOPATH)) {
+	throw 'environment variable GOPATH not set'
+}	
+
 Export-ModuleMember -Function 'Invoke-HappyFinder','Invoke-HappyFinderPsReadlineHandler'
