@@ -3,6 +3,8 @@
 
 HappyFinderWrapper is a PowerShell module that wraps [HappyFinder](https://github.com/hugows/hf), a fuzzy file finder for the command line.  HappyFinder contains a subset of the features available in the popular finder [fzf](https://github.com/junegunn/fzf).
 
+![](https://raw.github.com/kelleyma49/HappyFinderWrapper/master/HfwDemonstration.gif)
+
 # Installation
 HappyFinderWrapper is available on the [PowerShell Gallery](https://www.powershellgallery.com/packages/HappyFinderWrapper).  PSReadline should be imported before HappyFinderWrapper as HappyFinderWrapper registers <kbd>CTRL+T</kbd> as a PSReadline key handler.
 
