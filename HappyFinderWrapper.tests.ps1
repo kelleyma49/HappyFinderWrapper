@@ -38,6 +38,14 @@ Describe "Find-CurrentPath" {
 				$rightCursor | Should Be 0
 			}
 
+			It "Should Return Path Cursor at Beginning for Single Char" {
+				$line = "~" ; $cursor = 0
+				$leftCursor = $rightCursor = $null
+				Find-CurrentPath $line $cursor ([ref]$leftCursor) ([ref]$rightCursor) | Should Be "~"
+				$leftCursor | Should Be 0
+				$rightCursor | Should Be ($line.Length-1)
+			}
+
 			It "Should Return Path Cursor at Beginning" {
 				$line = "C:\Windows\" ; $cursor = 0
 				$leftCursor = $rightCursor = $null

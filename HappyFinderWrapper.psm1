@@ -27,6 +27,8 @@ function Invoke-HappyFinder {
 
 	if ($BasePath -eq $null -or !(Test-Path $BasePath -PathType Container)) {
 		$BasePath = $PWD.Path
+	} else {
+		$BasePath = (Resolve-Path $BasePath).Path
 	}
 
 	$batScriptPath = Join-Path $PSScriptRoot 'setenvvar.bat'
@@ -136,9 +138,13 @@ function Invoke-HappyFinderPsReadlineHandler {
 		
 		$str = $result -join ','
 		if ($addSpace) {
-			[Microsoft.PowerShell.PSConsoleReadLine]::Replace($leftCursor,$rightCursor-$leftCursor+1," " + $str)
+			$str = ' ' + $str
+		}
+		$replaceLen = $rightCursor - $leftCursor
+		if ($rightCursor -eq 0 -and $leftCursor -eq 0) {
+			[Microsoft.PowerShell.PSConsoleReadLine]::Insert($str)
 		} else {
-			[Microsoft.PowerShell.PSConsoleReadLine]::Replace($leftCursor,$rightCursor-$leftCursor+1,$str)
+			[Microsoft.PowerShell.PSConsoleReadLine]::Replace($leftCursor,$replaceLen+1,$str)
 		}		
 	}
 }
