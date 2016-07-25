@@ -33,6 +33,7 @@
     <Compile Include="HappyFinderWrapper.psd1" />
     <Compile Include="HappyFinderWrapper.psm1" />
     <Compile Include="HappyFinderWrapper.tests.ps1" />
+    <Compile Include="README.md" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Target Name="Build" />

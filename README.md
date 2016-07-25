@@ -13,5 +13,5 @@ HappyFinderWrapper has only been tested on PowerShell 5.0.
 # Usage
 Press <kbd>CTRL+T</kbd> to start HappyFinder.  HappyFinderWrapper will parse the current token and use that as the starting path to search from.  If current token is empty, or the token isn't a valid path, HappyFinderWrapper will search below the current working directory.  
 
-Multiple items can be selected in HappyFinder.  If more than one it is selected by the user, the results are returned as comma separated list.  Results are properly quoted if they contain whitespace.
+Multiple items can be selected in HappyFinder.  If more than one it is selected by the user, the results are returned as a comma separated list.  Results are properly quoted if they contain whitespace.
 
