@@ -5,10 +5,13 @@ HappyFinderWrapper is a PowerShell module that wraps [HappyFinder](https://githu
 
 ![](https://raw.github.com/kelleyma49/HappyFinderWrapper/master/HfwDemonstration.gif)
 
-# Installation
-HappyFinderWrapper is available on the [PowerShell Gallery](https://www.powershellgallery.com/packages/HappyFinderWrapper).  PSReadline should be imported before HappyFinderWrapper as HappyFinderWrapper registers <kbd>CTRL+T</kbd> as a PSReadline key handler.
+# Prerequisites
+Follow the [installation instructions for hf] (https://github.com/hugows/hf#installation) before installing HappyFinderWrapper.
 
 HappyFinderWrapper has only been tested on PowerShell 5.0.
+
+# Installation
+HappyFinderWrapper is available on the [PowerShell Gallery](https://www.powershellgallery.com/packages/HappyFinderWrapper).  PSReadline should be imported before HappyFinderWrapper as HappyFinderWrapper registers <kbd>CTRL+T</kbd> as a PSReadline key handler.
 
 # Usage
 Press <kbd>CTRL+T</kbd> to start HappyFinder.  HappyFinderWrapper will parse the current token and use that as the starting path to search from.  If current token is empty, or the token isn't a valid path, HappyFinderWrapper will search below the current working directory.  
